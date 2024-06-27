@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube URL to German Dub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #ffffff;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #progressBarContainer {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        #progressBar {
+            width: 0%;
+            height: 30px;
+            background-color: #28a745;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+        #result {
+            text-align: center;
+        }
+        video {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+        }
+        .fullscreen-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .fullscreen-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Paste YouTube URL to Get German Dub</h1>
+        <form id="urlForm">
+            <input type="text" id="youtubeUrl" placeholder="Enter YouTube URL" required>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="progressBarContainer">
+            <div id="progressBar">0%</div>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('urlForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const url = document.getElementById('youtubeUrl').value;
+            const response = await fetch('/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url }),
+            });
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('result').innerHTML = `<p>Error: ${data.error}</p>`;
+            } else {
+                document.getElementById('result').innerHTML = `<p>${data.message}</p>`;
+                checkProgress();
+            }
+        });
+
+        async function checkProgress() {
+            const response = await fetch('/progress');
+            const data = await response.json();
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${data.percentage}%`;
+            progressBar.innerHTML = `${data.percentage}% - ${data.message}`;
+            if (data.percentage < 100) {
+                setTimeout(checkProgress, 1000);
+            } else if (data.video_path) {
+                const videoUrl = data.video_path;
+                document.getElementById('result').innerHTML = `
+                    <video id="videoPlayer" width="640" height="480" controls>
+                        <source src="${videoUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
+                `;
+
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    const videoPlayer = document.getElementById('videoPlayer');
+                    if (videoPlayer.requestFullscreen) {
+                        videoPlayer.requestFullscreen();
+                    } else if (videoPlayer.mozRequestFullScreen) { // Firefox
+                        videoPlayer.mozRequestFullScreen();
+                    } else if (videoPlayer.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                        videoPlayer.webkitRequestFullscreen();
+                    } else if (videoPlayer.msRequestFullscreen) { // IE/Edge
+                        videoPlayer.msRequestFullscreen();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
